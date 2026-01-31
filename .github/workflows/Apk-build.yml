@@ -1,0 +1,56 @@
+name: Build Aria LifeSync APK
+
+on:
+  workflow_dispatch: # Activación manual
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar Dependencias
+        run: |
+          npm install
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Construir Proyecto Web (Aria LifeSync)
+        run: |
+          # Tu script de build crea la carpeta /dist según tu package.json
+          npm run build
+
+      - name: Configurar Entorno Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Inicializar Capacitor y Generar Android
+        run: |
+          # Configuramos el ID del paquete basado en tu metadata
+          npx cap init "Aria LifeSync" "com.aria.lifesync" --web-dir dist
+          npx cap add android
+          npx cap copy
+          npx cap sync
+
+      - name: Compilar APK (Debug)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Cargar APK como Artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aria-LifeSync-Alpha-Build
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          
+          
